@@ -2,12 +2,42 @@
 #include "guids.h"
 #include "win32\winspk.h"
 
+char *
+wide2char(LPCWSTR _wide_str)
+{
+  int size = wcstombs(0, _wide_str, 0) + 1;
+  if (!size) return 0;
+
+  char *char_str = new char[size];
+  if (!char_str) return 0;
+
+  WideCharToMultiByte(CP_ACP, 0, _wide_str, -1, char_str, size, 0, 0);
+  char_str[size-1] = 0; // make sure that string is properly ended
+  return char_str;
+}
+
+LPWSTR
+char2wide(const char *_char_str)
+{
+  int size = mbstowcs(0, _char_str, 0) + 1;
+  if (!size) return 0;
+
+  wchar_t *wide_str = new wchar_t[size];
+  if (!wide_str) return 0;
+
+  MultiByteToWideChar(CP_ACP, 0, _char_str, -1, wide_str, size);
+  wide_str[size-1] = 0; // make sure that string is properly ended
+  return wide_str;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 VALibSource::VALibSource(TCHAR *_filter_name, LPUNKNOWN _lpunk, CLSID _clsid)
 :CSource(_filter_name, _lpunk, _clsid)
-{ 
-}
+{}
+
+VALibSource::~VALibSource()
+{}
 
 CUnknown *WINAPI 
 VALibSource::CreateInstance(LPUNKNOWN _lpunk, HRESULT* _phr)
@@ -35,21 +65,25 @@ VALibSource::NonDelegatingQueryInterface(REFIID _riid, void **_ppv)
 STDMETHODIMP 
 VALibSource::Load(LPCOLESTR _filename, const AM_MEDIA_TYPE *_pmt)
 {
-  if(GetPinCount() > 0)
+  // The Load method causes a source filter to load a media file. 
+
+  // This method initializates the interface. It is not designed to load 
+  // multiple files, and any calls to this method after the first call 
+  // will fail. 
+
+  // Depending on the filter, the pszFileName parameter should specify the 
+  // absolute path to a file on disk (File Source (Async) filter, WM ASF 
+  // Reader filter) or the URL of a file to download (File Source (URL) 
+  // filter).
+
+  if (GetPinCount() > 0)
     return VFW_E_ALREADY_CONNECTED;
 
+  char *filename = wide2char(_filename);
+  if (!filename) return E_OUTOFMEMORY;
+
   HRESULT hr = S_OK;
-
-  int size = wcstombs(0, _filename, 0) + 1;
-  char *filename = new char[size];
-  if (!filename)
-    return E_OUTOFMEMORY;
-
-  size = WideCharToMultiByte(CP_ACP, 0, _filename, -1, filename, size, 0, 0);
-  //size = wcstombs(filename, _filename, size);
-
-  VALibStream *stream = new VALibStream(filename, this, &hr);
-
+  stream = new VALibStream(filename, this, &hr);
   delete filename;
 
   if (!stream)
@@ -58,6 +92,7 @@ VALibSource::Load(LPCOLESTR _filename, const AM_MEDIA_TYPE *_pmt)
   if FAILED(hr)
   {
     delete stream;
+    stream = 0;
     return hr;
   }
 
@@ -67,7 +102,63 @@ VALibSource::Load(LPCOLESTR _filename, const AM_MEDIA_TYPE *_pmt)
 STDMETHODIMP 
 VALibSource::GetCurFile(LPOLESTR *_filename, AM_MEDIA_TYPE *_pmt)
 {
-  return E_FAIL;
+  // The GetCurFile method retrieves the name and media type of the current 
+  // file. 
+
+  // If the filter has not opened a file, the method might succeed but 
+  // return NULL in the ppszFileName parameter. Check the value when the 
+  // method returns.
+
+  // The method allocates the memory for the string returned in ppszFileName, 
+  // and the memory for the format block in the media type (if any). The 
+  // caller must free them by calling CoTaskMemFree.
+
+  if (!stream)
+    return E_FAIL;
+
+  if (_filename)
+  {
+    const char *filename = stream->get_filename();
+
+    int size = mbstowcs(0, filename, 0) + 1;
+    if (!size) return E_OUTOFMEMORY;
+
+    *_filename = (LPOLESTR)CoTaskMemAlloc(size * sizeof(wchar_t));
+    if (!*_filename) return E_OUTOFMEMORY;
+
+    MultiByteToWideChar(CP_ACP, 0, filename, -1, *_filename, size);
+    (*_filename)[size-1] = 0; // make sure that string is properly ended
+  }
+  else
+    return E_POINTER;
+
+  if (_pmt)
+    if FAILED(stream->ConnectionMediaType(_pmt))
+    {
+      HRESULT hr;
+      IEnumMediaTypes *enum_mt;
+
+      hr = stream->EnumMediaTypes(&enum_mt);
+      if FAILED(hr) 
+      {
+        CoTaskMemFree(*_filename);
+        return hr;
+      }
+
+      hr = enum_mt->Next(1, &_pmt, 0);
+      enum_mt->Release();
+
+      if FAILED(hr)
+      {
+        CoTaskMemFree(*_filename);
+        return hr;
+      }
+
+      if (hr == S_FALSE)
+        memset(_pmt, 0, sizeof(AM_MEDIA_TYPE));
+    }
+
+  return S_OK;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -126,16 +217,34 @@ VALibStream::GetMediaType(int i, CMediaType* pmt)
 {
   CAutoLock auto_lock(&seek_lock);
   if (i < 0) return E_INVALIDARG;
-  if (i > 1) return VFW_S_NO_MORE_ITEMS;
 
   WAVEFORMATEX wfe;
 	memset(&wfe, 0, sizeof(WAVEFORMATEX));
 
   switch (format)
   {
-    case FORMAT_AC3: wfe.wFormatTag = WAVE_FORMAT_AC3; break;
-    case FORMAT_DTS: wfe.wFormatTag = WAVE_FORMAT_DTS; break;
-    default: return E_FAIL;
+    case FORMAT_AC3:
+      wfe.wFormatTag = WAVE_FORMAT_AC3;
+      switch(i)
+      {
+        case 0: pmt->SetSubtype(&MEDIASUBTYPE_DOLBY_AC3); break;
+        case 1: pmt->SetSubtype(&MEDIASUBTYPE_AVI_AC3);   break;
+        default: return VFW_S_NO_MORE_ITEMS;
+      }
+      break;
+
+    case FORMAT_DTS:
+      wfe.wFormatTag = WAVE_FORMAT_DTS;
+      switch(i)
+      {
+        case 0: pmt->SetSubtype(&MEDIASUBTYPE_DTS);     break;
+        case 1: pmt->SetSubtype(&MEDIASUBTYPE_AVI_DTS); break;
+        default: return VFW_S_NO_MORE_ITEMS;
+      }
+      break;
+
+    default:
+      return VFW_S_NO_MORE_ITEMS;
   }
 
   wfe.nChannels = file.get_spk().nch();
@@ -146,25 +255,6 @@ VALibStream::GetMediaType(int i, CMediaType* pmt)
   wfe.cbSize = 0;
 
   pmt->SetType(&MEDIATYPE_Audio);
-  switch (i)
-  {
-    case 0:
-      switch (format)
-      {
-        case FORMAT_AC3: pmt->SetSubtype(&MEDIASUBTYPE_DOLBY_AC3); break;
-        case FORMAT_DTS: pmt->SetSubtype(&MEDIASUBTYPE_DTS); break;
-      }
-      break;
-
-    case 1:
-      switch (format)
-      {
-        case FORMAT_AC3: pmt->SetSubtype(&MEDIASUBTYPE_AVI_AC3); break;
-        case FORMAT_DTS: pmt->SetSubtype(&MEDIASUBTYPE_AVI_DTS); break;
-      }
-      break;
-  }
-
   pmt->SetFormatType(&FORMAT_WaveFormatEx);
   pmt->SetFormat((BYTE*)&wfe, sizeof(WAVEFORMATEX) + wfe.cbSize);
   pmt->SetTemporalCompression(FALSE);
@@ -175,21 +265,32 @@ VALibStream::GetMediaType(int i, CMediaType* pmt)
 HRESULT 
 VALibStream::CheckMediaType(const CMediaType* pmt)
 {
-	if ((*pmt->Type()) != MEDIATYPE_Audio)
+	if (*pmt->Type() != MEDIATYPE_Audio)
     return E_INVALIDARG;
 
-  if ((*pmt->Subtype()) == MEDIASUBTYPE_DOLBY_AC3 ||
-      (*pmt->Subtype()) == MEDIASUBTYPE_AVI_AC3 ||
-      (*pmt->Subtype()) == MEDIASUBTYPE_DTS ||
-      (*pmt->Subtype()) == MEDIASUBTYPE_AVI_DTS)
-    return S_OK;
-
-  if ((*pmt->FormatType()) == FORMAT_WaveFormatEx)
+  switch (format)
   {
-    WAVEFORMATEX* wfe = (WAVEFORMATEX*)pmt->Format();
-    if (wfe->wFormatTag == WAVE_FORMAT_AC3 || 
-        wfe->wFormatTag == WAVE_FORMAT_DTS)
-      return S_OK;
+    case FORMAT_AC3:
+      if (*pmt->Subtype() == MEDIASUBTYPE_DOLBY_AC3 ||
+          *pmt->Subtype() == MEDIASUBTYPE_AVI_AC3)
+        return S_OK;
+
+      if (*pmt->FormatType() == FORMAT_WaveFormatEx &&
+          ((WAVEFORMATEX*)pmt->Format())->wFormatTag == WAVE_FORMAT_AC3)
+          return S_OK;
+
+      return E_INVALIDARG;
+
+    case FORMAT_DTS:
+      if (*pmt->Subtype() == MEDIASUBTYPE_DTS ||
+          *pmt->Subtype() == MEDIASUBTYPE_AVI_DTS)
+        return S_OK;
+
+      if (*pmt->FormatType() == FORMAT_WaveFormatEx && 
+          ((WAVEFORMATEX*)pmt->Format())->wFormatTag == WAVE_FORMAT_DTS)
+          return S_OK;
+
+      return E_INVALIDARG;
   }
 
   return E_INVALIDARG;
