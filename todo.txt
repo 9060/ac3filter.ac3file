@@ -1,0 +1,1 @@
+* Configuration dialog with full file information
