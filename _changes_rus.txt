@@ -1,11 +1,11 @@
 <b>0.1a</b> - 
   * Первый релиз
-  * Поддержка AC3/DTS файлов
-  * Поддерживаемые форматы:
-      AC3: 8 bit (equivalent to 16bit little endian, usual format)
+  * Поддержка AC3/DTS файлов следующих форматов:
+      AC3: 8 bit (= 16 bit little endian)
            16 bit big endian
-      DTS: 8 bit (equivalent to 16bit little endian, usual format)
-           14 bit big/little endian, padded/unpadded,
+      DTS: 8 bit (= 16bit little endian)
+           14 bit big/little endian
            16 bit big endian
+  * Поддержка MPEG1/2 Program Elementary Stream (PES) с AC3/DTS потоком
   * Поддержка AC3/AudioCD и DTS/AudioCD форматов
-    (формат SPDIF, IEC 61937)
+    (формат SPDIF, стандарт IEC 61937)
