@@ -26,13 +26,20 @@ LANGUAGE LANG_NEUTRAL, SUBLANG_DEFAULT
 // Dialog
 //
 
-IDD_FILE DIALOG DISCARDABLE  0, 0, 210, 154
-STYLE WS_CHILD | WS_DISABLED | WS_CAPTION
-CAPTION "File information"
+IDD_FILE DIALOG DISCARDABLE  0, 0, 166, 217
+STYLE DS_MODALFRAME | WS_CHILD
 FONT 8, "MS Sans Serif"
 BEGIN
-    EDITTEXT        IDC_EDIT2,7,7,196,122,ES_AUTOHSCROLL | ES_READONLY
-    DEFPUSHBUTTON   "Close",IDC_BTN_CLOSE,79,133,50,14
+    LTEXT           "Frames/errors:",IDC_STATIC,7,168,46,8
+    EDITTEXT        IDC_EDT_FRAMES,58,166,29,14,ES_AUTOHSCROLL | ES_READONLY
+    LTEXT           "File position:",IDC_STATIC,7,182,46,8
+    LTEXT           "Time:",IDC_STATIC,7,196,46,8
+    EDITTEXT        IDC_EDT_FILEPOS,58,180,59,14,ES_AUTOHSCROLL | 
+                    ES_READONLY
+    EDITTEXT        IDC_EDT_TIME,58,195,59,14,ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_EDT_ERRORS,88,166,29,14,ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_EDT_INFO,7,7,152,158,ES_MULTILINE | ES_AUTOVSCROLL | 
+                    ES_AUTOHSCROLL | ES_READONLY
 END
 
 
@@ -47,9 +54,10 @@ BEGIN
     IDD_FILE, DIALOG
     BEGIN
         LEFTMARGIN, 7
-        RIGHTMARGIN, 203
+        RIGHTMARGIN, 159
+        VERTGUIDE, 53
         TOPMARGIN, 7
-        BOTTOMMARGIN, 147
+        BOTTOMMARGIN, 210
     END
 END
 #endif    // APSTUDIO_INVOKED
@@ -91,6 +99,17 @@ BEGIN
 END
 
 #endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// String Table
+//
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    IDS_FILE                "File information"
+END
 
 #endif    // Russian resources
 /////////////////////////////////////////////////////////////////////////////

@@ -1,4 +1,5 @@
 #include "ac3file.h"
+#include "ac3file_dlg.h"
 #include "guids.h"
 
 // setup data
@@ -6,8 +7,9 @@
 const AMOVIESETUP_MEDIATYPE sudPinTypes[] =
 {
 {&MEDIATYPE_Audio, &MEDIASUBTYPE_AVI_AC3   },
-{&MEDIATYPE_Audio, &MEDIASUBTYPE_AVI_DTS   },
 {&MEDIATYPE_Audio, &MEDIASUBTYPE_DOLBY_AC3 },
+{&MEDIATYPE_Audio, &MEDIASUBTYPE_DTS       },
+{&MEDIATYPE_Audio, &MEDIASUBTYPE_AVI_DTS   },
 };
 
 const AMOVIESETUP_PIN psudPins[] =                 
@@ -37,7 +39,10 @@ const AMOVIESETUP_FILTER sudFilter =
 
 
 CFactoryTemplate g_Templates[] = {
-    { L"VALibSource"
+    { L"AC3File property page"
+    , &CLSID_AC3FileDlg
+    , AC3FileDlg::Create },
+    { L"AC3File"
     , &CLSID_AC3File
     , &VALibSource::CreateInstance
     , NULL

@@ -2,6 +2,7 @@
 #define AC3FILE_H
 
 #include <streams.h>
+#include "guids.h"
 #include "parsers\ac3\ac3_parser.h"
 #include "parsers\dts\dts_parser.h"
 #include "parsers\file_parser.h"
@@ -9,7 +10,7 @@
 class VALibSource;
 class VALibStream;
 
-class VALibSource : public CSource, IFileSourceFilter, IAMFilterMiscFlags
+class VALibSource : public CSource, IFileSourceFilter, IAMFilterMiscFlags, ISpecifyPropertyPages, IAC3File
 {
 protected:
   VALibStream *stream;
@@ -26,6 +27,13 @@ public:
   STDMETHODIMP NonDelegatingQueryInterface(REFIID _riid, void **_ppv);
 
   /////////////////////////////////////////////////////////
+  // IAC3File
+
+  STDMETHODIMP get_info(char *info, int len);
+  STDMETHODIMP get_frames(unsigned *frames, unsigned *errors);
+  STDMETHODIMP get_pos(unsigned *filepos, unsigned *pos_ms);
+
+  /////////////////////////////////////////////////////////
   // IFileSourceFilter
 
   STDMETHODIMP Load(LPCOLESTR _filename, const AM_MEDIA_TYPE *_pmt);
@@ -38,6 +46,11 @@ public:
   {
     return AM_FILTER_MISC_FLAGS_IS_SOURCE;
   }
+
+  /////////////////////////////////////////////////////////
+  // ISpecifyPropertyPages
+
+  STDMETHODIMP GetPages(CAUUID *pPages);
 };
 
 class VALibStream: public CSourceStream, public CSourceSeeking
@@ -56,8 +69,12 @@ public:
   VALibStream(TCHAR *_filename, CSource *_parent, HRESULT *_phr);
   virtual ~VALibStream();
 
-  inline const char *get_filename()
-  { return file.get_filename(); }
+  inline const char *get_filename()          const { return file.get_filename(); }
+  inline void get_info(char *_buf, int _len) const { file.get_info(_buf, _len); }
+  inline unsigned get_frames()               const { return (unsigned)file.get_pos(file.frames); }
+  inline unsigned get_errors()               const { return file.get_errors(); }
+  inline unsigned get_filepos()              const { return (unsigned)file.get_pos(file.bytes); }
+  inline unsigned get_pos_ms()               const { return (unsigned)file.get_pos(file.ms); }
 
   /////////////////////////////////////////////////////////
   // IUnknown

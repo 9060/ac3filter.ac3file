@@ -31,6 +31,8 @@ char2wide(const char *_char_str)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// VALibSource
+///////////////////////////////////////////////////////////////////////////////
 
 VALibSource::VALibSource(TCHAR *_filter_name, LPUNKNOWN _lpunk, CLSID _clsid)
 :CSource(_filter_name, _lpunk, _clsid)
@@ -48,10 +50,16 @@ VALibSource::CreateInstance(LPUNKNOWN _lpunk, HRESULT* _phr)
 	return _punk;
 }
 
+///////////////////////////////////////////////////////////
+// IUnknown
+
 STDMETHODIMP 
 VALibSource::NonDelegatingQueryInterface(REFIID _riid, void **_ppv)
 {
   CheckPointer(_ppv, E_POINTER);
+
+  if (_riid == IID_IAC3File)
+    return GetInterface((IAC3File *) this, _ppv);
 
   if (_riid == IID_IFileSourceFilter)
     return GetInterface((IFileSourceFilter *) this, _ppv);
@@ -59,8 +67,71 @@ VALibSource::NonDelegatingQueryInterface(REFIID _riid, void **_ppv)
   if (_riid == IID_IAMFilterMiscFlags)
     return GetInterface((IAMFilterMiscFlags *) this, _ppv);
 
+  if (_riid == IID_ISpecifyPropertyPages)
+    return GetInterface((ISpecifyPropertyPages *) this, _ppv);
+
   return CSource::NonDelegatingQueryInterface(_riid, _ppv);
 }
+
+///////////////////////////////////////////////////////////
+// IAC3File
+
+STDMETHODIMP 
+VALibSource::get_info(char *_info, int _len)
+{
+  if (!stream) return E_FAIL;
+
+  // windows controls require '\n' to be replaced with '\r\n'
+  stream->get_info(_info, _len);
+
+  int len = strlen(_info);
+  int cnt = 0;
+
+  for (int i = 0; i < len; i++)
+    if (_info[i+1] == '\n')
+      cnt++;
+
+  char *src = _info + len - 1;
+  char *dst = src + cnt + 1;
+  if (dst > _info + _len)
+    dst = _info + len;
+  *dst-- = 0;
+
+  while (src != dst)
+    if (src[0] != '\r' && src[1] == '\n')
+    {
+      *dst-- = '\r';
+      *dst-- = *src--;
+    }
+    else
+      *dst-- = *src--;
+
+  return S_OK;
+}
+
+STDMETHODIMP 
+VALibSource::get_frames(unsigned *_frames, unsigned *_errors)
+{
+  if (!stream) return E_FAIL;
+
+  if (_frames) *_frames = stream->get_frames();
+  if (_errors) *_errors = stream->get_errors();
+  return S_OK;
+}
+
+STDMETHODIMP 
+VALibSource::get_pos(unsigned *_filepos, unsigned *_pos_ms)
+{
+  if (!stream) return E_FAIL;
+
+  if (_filepos) *_filepos = stream->get_filepos();
+  if (_pos_ms)  *_pos_ms  = stream->get_pos_ms();
+  return S_OK;
+}
+
+
+///////////////////////////////////////////////////////////
+// IFileSourceFilter
 
 STDMETHODIMP 
 VALibSource::Load(LPCOLESTR _filename, const AM_MEDIA_TYPE *_pmt)
@@ -161,6 +232,21 @@ VALibSource::GetCurFile(LPOLESTR *_filename, AM_MEDIA_TYPE *_pmt)
   return S_OK;
 }
 
+///////////////////////////////////////////////////////////
+// ISpecifyPropertyPages
+
+STDMETHODIMP 
+VALibSource::GetPages(CAUUID *pPages)
+{
+  pPages->cElems = 1;
+  pPages->pElems = (GUID *) CoTaskMemAlloc(sizeof(GUID) * pPages->cElems);
+  if (!pPages->pElems) return E_OUTOFMEMORY;
+  (pPages->pElems)[0] = CLSID_AC3FileDlg;
+  return NOERROR;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// VALibStream
 ///////////////////////////////////////////////////////////////////////////////
 
 VALibStream::VALibStream(TCHAR *_filename, CSource *_parent, HRESULT *_phr)
@@ -197,6 +283,7 @@ VALibStream::~VALibStream()
   file.close();
 }
 
+///////////////////////////////////////////////////////////
 // IUnknown
 
 STDMETHODIMP 
@@ -209,8 +296,8 @@ VALibStream::NonDelegatingQueryInterface(REFIID _riid, void **_ppv)
     CSourceStream::NonDelegatingQueryInterface(_riid, _ppv);
 }
 
+///////////////////////////////////////////////////////////
 // CBaseOutputPin
-
 
 HRESULT 
 VALibStream::GetMediaType(int i, CMediaType* pmt)
@@ -320,6 +407,7 @@ VALibStream::DecideBufferSize(IMemAllocator* pAlloc, ALLOCATOR_PROPERTIES* pProp
   return NOERROR;
 }
 
+///////////////////////////////////////////////////////////
 // CSourceStream
 
 HRESULT 
@@ -383,6 +471,7 @@ VALibStream::FillBuffer(IMediaSample* sample)
 }
 
 
+///////////////////////////////////////////////////////////
 // CSourceSeeking
 
 void 
