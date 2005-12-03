@@ -522,8 +522,8 @@ VALibStream::ChangeRate()
 STDMETHODIMP  
 VALibStream::SetRate(double _rate)
 {
-	if (_rate <= 0)
-		return E_INVALIDARG;
+  if (_rate <= 0)
+    return E_INVALIDARG;
 
   {
     CAutoLock auto_lock(CSourceSeeking::m_pLock);
@@ -531,7 +531,7 @@ VALibStream::SetRate(double _rate)
   }
 
   restart();
-	return S_OK;
+    return S_OK;
 }
 
 

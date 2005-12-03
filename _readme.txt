@@ -6,7 +6,7 @@ AC3File is DirectShow AC3 and DTS file source filter. Required to playback
 raw AC3 and DTS files. Supports much of different format variations: 
 8/14/16 bit big/low endian bitstreams.
 
-Copyright (c) 2004 by Alexander Vigovsky (xvalex@mail.ru)
+Copyright (c) 2005 by Alexander Vigovsky (xvalex@mail.ru)
 
 
 License:
