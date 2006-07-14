@@ -1,12 +1,12 @@
-=========
+=======
 AC3File
-=========
+=======
 
 AC3File is DirectShow AC3 and DTS file source filter. Required to playback 
 raw AC3 and DTS files. Supports much of different format variations: 
 8/14/16 bit big/low endian bitstreams.
 
-Copyright (c) 2005 by Alexander Vigovsky (xvalex@mail.ru)
+Copyright (c) 2006 by Alexander Vigovsky (xvalex@mail.ru)
 
 
 License:
@@ -41,43 +41,40 @@ Include path should have this lines first:
 ...\...SDK\Samples\Multimedia\DirectShow\BaseClasses
 ...\...SDK\include
 
+Libraries path should have this lines first:
+
+...\...SDK\lib
+
 Required libraries are strmbase.lib (release) and strmbasd.lib (debug) in
 libraries path. If it is not shipped with SDK you can compile this project:
 ...\...SDK\Samples\Multimedia\DirectShow\BaseClasses\baseclasses.dsw
 (read MSDN about how to setup environment to use DirectShow Base Classes)
 
-It also require VALib library, available at 
-http://sourceforge.net/project/showfiles.php?group_id=66022
-
 AC3File project has dependency on the valib library project so 
 by default directories should be configured as follows:
 
-...\AC3File       - ac3file project
-...\VALib
-...\VALib\lib     - valib library project
-...\VALib\valib   - valib include & source files
+...\ac3file       - ac3file project
+...\valib         - valib project
+...\valib\lib     - valib library
+...\valib\valib   - valib include & source files
 
-You may simply checkout both modules from CVS to the same root folder.
+You may checkout both modules from the CVS:
 CVS root: :pserver:anonymous@cvs.sourceforge.net:/cvsroot/ac3filter
-Modules:  AC3File, VALib
-
-If you want to alter default layout:
-1) compile valib.lib
-2) specify valib.lib in ac3file's linked libraries
-3) specify include path to the root of valib includes
+Modules: ac3file, valib
 
 
 Links:
 ======
 
-http://ac3filter.sourceforge.net             - Project home page
+http://ac3filter.net                         - Project home page
+http://ac3filter.net/forum                   - Support forum
 http://sourceforge.net/projects/ac3filter    - Sourceforge project page
-http://sourceforge.net/forum/?group_id=66022 - Forum
 
 
 Donate:
 =======
 
+http://order.kagi.com/?6CZJZ&lang=en
 
 
 Contact Author: 
@@ -85,5 +82,5 @@ Contact Author:
 
 mailto:xvalex@mail.ru?Subject=AC3File
 
-Please write in English or Russian. Subject should have 'AC3File'  word 
+Please write in English or Russian. Subject should have 'AC3File' word 
 otherwise it may be accidentally deleted with tons of other junk mail.
