@@ -1,3 +1,9 @@
+<b>0.3a</b> - 31.07.06
+  * Format detection algorithm updated
+    Now it require 5 frames (~1sec) instead of 100 frames (~30sec)
+  * Extended AC3 sainty checks disabled
+    How it recognizes AC3 files produced with buggy encoder
+
 <b>0.2a</b> - 15.07.06
   * First public release
   * Support AC3/DTS files of following formats:
