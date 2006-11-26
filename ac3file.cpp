@@ -2,6 +2,11 @@
 #include "guids.h"
 #include "win32\winspk.h"
 
+#include "parsers\ac3\ac3_header.h"
+#include "parsers\dts\dts_header.h"
+#include "parsers\mpa\mpa_header.h"
+#include "parsers\spdif_header.h"
+
 char *
 wide2char(LPCWSTR _wide_str)
 {
@@ -82,9 +87,7 @@ VALibSource::get_info(char *_info, int _len)
   if (!stream) return E_FAIL;
 
   // windows controls require '\n' to be replaced with '\r\n'
-  stream->get_info(_info, _len);
-
-  int len = strlen(_info);
+  int len = stream->get_info(_info, _len);
   int cnt = 0;
 
   for (int i = 0; i < len; i++)
@@ -110,22 +113,26 @@ VALibSource::get_info(char *_info, int _len)
 }
 
 STDMETHODIMP 
-VALibSource::get_frames(unsigned *_frames, unsigned *_errors)
+VALibSource::get_pos(unsigned *_frames, unsigned *_bytes, unsigned *_ms)
 {
   if (!stream) return E_FAIL;
 
-  if (_frames) *_frames = stream->get_frames();
-  if (_errors) *_errors = stream->get_errors();
+  if (_frames) *_frames = stream->get_pos_frames();
+  if (_bytes)  *_bytes  = stream->get_pos_bytes();
+  if (_ms)     *_ms     = stream->get_pos_ms();
+
   return S_OK;
 }
 
 STDMETHODIMP 
-VALibSource::get_pos(unsigned *_filepos, unsigned *_pos_ms)
+VALibSource::get_size(unsigned *_frames, unsigned *_bytes, unsigned *_ms)
 {
   if (!stream) return E_FAIL;
 
-  if (_filepos) *_filepos = stream->get_filepos();
-  if (_pos_ms)  *_pos_ms  = stream->get_pos_ms();
+  if (_frames) *_frames = stream->get_size_frames();
+  if (_bytes)  *_bytes  = stream->get_size_bytes();
+  if (_ms)     *_ms = stream->get_size_ms();
+
   return S_OK;
 }
 
@@ -258,22 +265,32 @@ VALibStream::VALibStream(TCHAR *_filename, CSource *_parent, HRESULT *_phr)
   if (_phr && FAILED(*_phr))
     return;
 
-  format = FORMAT_UNKNOWN;
-  if (file.open(&ac3, _filename) && file.probe())
-    format = FORMAT_AC3;
-  else if (file.open(&dts, _filename) && file.probe())
-    format = FORMAT_DTS;
-  else
+  const HeaderParser *parser_list[] = { &spdif_header, &ac3_header, &dts_header };
+  multi_parser.set_parsers(parser_list, array_size(parser_list));
+
+  if (!file.open(_filename, &multi_parser, 1000000))
   {
     *_phr = E_FAIL;
     return;
-  } 
+  }
+    
+  if (!file.stats())
+  {
+    *_phr = E_FAIL;
+    return;
+  }
 
-  file.stats();
+  if (!file.load_frame())
+  {
+    *_phr = E_FAIL;
+    return;
+  }
+
+  spk = file.get_spk();
 
   pos = 0;
   m_rtStart = pos;
-  m_rtStop = REFERENCE_TIME(file.get_size(file.ms) * 10000);
+  m_rtStop = REFERENCE_TIME(file.get_size(file.time) * 10000000);
   m_rtDuration = m_rtStop - m_rtStart;
 }
 
@@ -282,6 +299,16 @@ VALibStream::~VALibStream()
 	CAutoLock auto_lock(&seek_lock);
   file.close();
 }
+
+
+size_t
+VALibStream::get_info(char *_buf, size_t _len) const
+{
+  size_t used = file.file_info(_buf, _len);
+  used += file.stream_info(_buf + used, _len - used);
+  return used;
+}
+
 
 ///////////////////////////////////////////////////////////
 // IUnknown
@@ -308,7 +335,7 @@ VALibStream::GetMediaType(int i, CMediaType* pmt)
   WAVEFORMATEX wfe;
 	memset(&wfe, 0, sizeof(WAVEFORMATEX));
 
-  switch (format)
+  switch (spk.format)
   {
     case FORMAT_AC3:
       wfe.wFormatTag = WAVE_FORMAT_AC3;
@@ -330,15 +357,25 @@ VALibStream::GetMediaType(int i, CMediaType* pmt)
       }
       break;
 
+    case FORMAT_SPDIF:
+      wfe.wFormatTag = WAVE_FORMAT_DOLBY_AC3_SPDIF;
+      switch(i)
+      {
+        case 0: pmt->SetSubtype(&MEDIASUBTYPE_DOLBY_AC3_SPDIF); break;
+        case 1: pmt->SetSubtype(&MEDIASUBTYPE_PCM); break;
+        default: return VFW_S_NO_MORE_ITEMS;
+      }
+      break;
+
     default:
       return VFW_S_NO_MORE_ITEMS;
   }
 
-  wfe.nChannels = file.get_spk().nch();
-  wfe.nSamplesPerSec = file.get_spk().sample_rate;
+  wfe.nChannels = spk.nch();
+  wfe.nSamplesPerSec = spk.sample_rate;
   wfe.wBitsPerSample = 0;
   wfe.nBlockAlign = 1;
-  wfe.nAvgBytesPerSec = int(file.get_bitrate()) / 8;
+  wfe.nAvgBytesPerSec = 0;
   wfe.cbSize = 0;
 
   pmt->SetType(&MEDIATYPE_Audio);
@@ -355,7 +392,7 @@ VALibStream::CheckMediaType(const CMediaType* pmt)
 	if (*pmt->Type() != MEDIATYPE_Audio)
     return E_INVALIDARG;
 
-  switch (format)
+  switch (spk.format)
   {
     case FORMAT_AC3:
       if (*pmt->Subtype() == MEDIASUBTYPE_DOLBY_AC3 ||
@@ -377,6 +414,15 @@ VALibStream::CheckMediaType(const CMediaType* pmt)
           ((WAVEFORMATEX*)pmt->Format())->wFormatTag == WAVE_FORMAT_DTS)
           return S_OK;
 
+    case FORMAT_SPDIF:
+      if (*pmt->Subtype() == MEDIASUBTYPE_DOLBY_AC3_SPDIF)
+        return S_OK;
+
+      if (*pmt->FormatType() == FORMAT_WaveFormatEx && 
+          ((WAVEFORMATEX*)pmt->Format())->wFormatTag == WAVE_FORMAT_DOLBY_AC3_SPDIF)
+          return S_OK;
+
+
       return E_INVALIDARG;
   }
 
@@ -392,7 +438,7 @@ VALibStream::DecideBufferSize(IMemAllocator* pAlloc, ALLOCATOR_PROPERTIES* pProp
   HRESULT hr = NOERROR;
 
 	pProperties->cBuffers = 1;
-	pProperties->cbBuffer = 4096;
+	pProperties->cbBuffer = multi_parser.max_frame_size();
 
   ALLOCATOR_PROPERTIES Actual;
 
@@ -416,7 +462,7 @@ VALibStream::OnThreadCreate()
   CAutoLock auto_lock(&seek_lock);
 
   pos = m_rtStart;
-  file.seek(double(pos) / 10000, file.ms);
+  file.seek(double(pos) / 10000000, file.time);
 
   return CSourceStream::OnThreadCreate();
 }
@@ -434,11 +480,17 @@ VALibStream::FillBuffer(IMediaSample* sample)
   {
     CAutoLock auto_lock(&seek_lock);
 
-    if(file.eof())
+    if (file.eof())
       return S_FALSE;
 
     if (!file.load_frame())
       return S_FALSE;
+
+    if (file.is_new_stream())
+    {
+      spk = file.get_spk();
+
+    }
 
     // copy data
     BYTE *buf;
@@ -454,7 +506,7 @@ VALibStream::FillBuffer(IMediaSample* sample)
     // timing
     REFERENCE_TIME t_start, t_end;
     t_start = REFERENCE_TIME((pos - m_rtStart) / m_dRateSeeking);
-    pos += REFERENCE_TIME(double(file.get_nsamples()) / file.get_spk().sample_rate * 10000000);
+    pos += REFERENCE_TIME(double(file.header_info().nsamples) / spk.sample_rate * 10000000);
     t_end = REFERENCE_TIME((pos - m_rtStart) / m_dRateSeeking);
 
     sample->SetTime(&t_start, &t_end);
@@ -493,7 +545,7 @@ VALibStream::ChangeStart()
     CAutoLock auto_lock(CSourceSeeking::m_pLock);
 
     pos = m_rtStart;
-    file.seek(double(pos) / 10000, file.ms);
+    file.seek(double(pos) / 10000000, file.time);
   }
 
   restart();
@@ -531,7 +583,7 @@ VALibStream::SetRate(double _rate)
   }
 
   restart();
-    return S_OK;
+  return S_OK;
 }
 
 

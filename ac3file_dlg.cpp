@@ -140,19 +140,16 @@ AC3FileDlg::set_dynamic_controls()
 {
   static char     info[1024] = "";
   static unsigned frames  = 0;
-  static unsigned errors  = 0;
-  static unsigned filepos = 0;
-  static unsigned pos_ms  = 0;
+  static unsigned bytes   = 0;
+  static unsigned ms      = 0;
   
   char     new_info[1024];
   unsigned new_frames;
-  unsigned new_errors;
-  unsigned new_filepos;
-  unsigned new_pos_ms;
+  unsigned new_bytes;
+  unsigned new_ms;
 
   filter->get_info(new_info, sizeof(new_info));
-  filter->get_frames(&new_frames, &new_errors);
-  filter->get_pos(&new_filepos, &new_pos_ms);
+  filter->get_pos(&new_frames, &new_bytes, &new_ms);
 
   /////////////////////////////////////
   // Stream info
@@ -171,23 +168,17 @@ AC3FileDlg::set_dynamic_controls()
     frames = new_frames;
     SetDlgItemInt(m_Dlg, IDC_EDT_FRAMES, frames, false);
   }
-  if (new_errors != errors || refresh)
+  if (new_bytes != bytes || refresh)
   {
-    errors = new_errors;
-    SetDlgItemInt(m_Dlg, IDC_EDT_ERRORS, errors, false);
+    bytes = new_bytes;
+    SetDlgItemInt(m_Dlg, IDC_EDT_FILEPOS, bytes, false);
   }
 
-  if (new_filepos != filepos || refresh)
+  if (new_ms != ms || refresh)
   {
-    filepos = new_filepos;
-    SetDlgItemInt(m_Dlg, IDC_EDT_FILEPOS, filepos, false);
-  }
-
-  if (new_pos_ms != pos_ms || refresh)
-  {
-    pos_ms = new_pos_ms;
+    ms = new_ms;
     char time[16];
-    sprintf(time, "%i:%02i:%02i.%03i", pos_ms / 3600000, (pos_ms % 3600000) / 60000, (pos_ms % 60000) / 1000, pos_ms % 1000);
+    sprintf(time, "%i:%02i:%02i.%03i", ms / 3600000, (ms % 3600000) / 60000, (ms % 60000) / 1000, ms % 1000);
     SetDlgItemText(m_Dlg, IDC_EDT_TIME, time);
   }
 

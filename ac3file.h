@@ -3,9 +3,9 @@
 
 #include <streams.h>
 #include "guids.h"
-#include "parsers\ac3\ac3_parser.h"
-#include "parsers\dts\dts_parser.h"
+
 #include "parsers\file_parser.h"
+#include "parsers\multi_header.h"
 
 class VALibSource;
 class VALibStream;
@@ -30,8 +30,8 @@ public:
   // IAC3File
 
   STDMETHODIMP get_info(char *info, int len);
-  STDMETHODIMP get_frames(unsigned *frames, unsigned *errors);
-  STDMETHODIMP get_pos(unsigned *filepos, unsigned *pos_ms);
+  STDMETHODIMP get_pos(unsigned *frames, unsigned *bytes, unsigned *ms);
+  STDMETHODIMP get_size(unsigned *frames, unsigned *bytes, unsigned *ms);
 
   /////////////////////////////////////////////////////////
   // IFileSourceFilter
@@ -60,21 +60,25 @@ protected:
   bool discontinuity;
   REFERENCE_TIME pos;
 
-  int format;
-  AC3Parser ac3;
-  DTSParser dts;
   FileParser file;
+  MultiHeader multi_parser;
+  Speakers spk;
 
 public:
   VALibStream(TCHAR *_filename, CSource *_parent, HRESULT *_phr);
   virtual ~VALibStream();
 
+  size_t get_info(char *_buf, size_t _len) const;
+
   inline const char *get_filename()          const { return file.get_filename(); }
-  inline void get_info(char *_buf, int _len) const { file.get_info(_buf, _len); }
-  inline unsigned get_frames()               const { return (unsigned)file.get_pos(file.frames); }
-  inline unsigned get_errors()               const { return file.get_errors(); }
-  inline unsigned get_filepos()              const { return (unsigned)file.get_pos(file.bytes); }
-  inline unsigned get_pos_ms()               const { return (unsigned)file.get_pos(file.ms); }
+
+  inline unsigned get_pos_frames()           const { return (unsigned)file.get_pos(file.frames); }
+  inline unsigned get_pos_bytes()            const { return (unsigned)file.get_pos(file.bytes); }
+  inline unsigned get_pos_ms()               const { return (unsigned)file.get_pos(file.time) * 1000; }
+
+  inline unsigned get_size_frames()          const { return (unsigned)file.get_size(file.frames); }
+  inline unsigned get_size_bytes()           const { return (unsigned)file.get_size(file.bytes); }
+  inline unsigned get_size_ms()              const { return (unsigned)file.get_size(file.time) * 1000; }
 
   /////////////////////////////////////////////////////////
   // IUnknown

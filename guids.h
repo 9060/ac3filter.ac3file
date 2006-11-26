@@ -35,8 +35,8 @@ DECLARE_INTERFACE_(IAC3File, IUnknown)
 {
   // Stats
   STDMETHOD (get_info)  (char *info, int len) = 0;
-  STDMETHOD (get_frames)(unsigned *frames, unsigned *errors) = 0;
-  STDMETHOD (get_pos)   (unsigned *filepos, unsigned *pos_ms) = 0;
+  STDMETHOD (get_pos)   (unsigned *frames, unsigned *bytes, unsigned *ms) = 0;
+  STDMETHOD (get_size)  (unsigned *frames, unsigned *bytes, unsigned *ms) = 0;
 };
 
 
