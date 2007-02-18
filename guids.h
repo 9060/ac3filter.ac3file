@@ -39,5 +39,4 @@ DECLARE_INTERFACE_(IAC3File, IUnknown)
   STDMETHOD (get_size)  (unsigned *frames, unsigned *bytes, unsigned *ms) = 0;
 };
 
-
 #endif

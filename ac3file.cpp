@@ -52,7 +52,7 @@ VALibSource::CreateInstance(LPUNKNOWN _lpunk, HRESULT* _phr)
   CUnknown *_punk = new VALibSource("AC3File", _lpunk, CLSID_AC3File);
   if (!_punk) 
     *_phr = E_OUTOFMEMORY;
-	return _punk;
+      return _punk;
 }
 
 ///////////////////////////////////////////////////////////
@@ -260,7 +260,7 @@ VALibStream::VALibStream(TCHAR *_filename, CSource *_parent, HRESULT *_phr)
 : CSourceStream(_filename, _phr, _parent, L"Output")
 , CSourceSeeking(_filename, (IPin*)this, _phr, &seek_lock)
 {
-	CAutoLock auto_lock(&seek_lock);
+  CAutoLock auto_lock(&seek_lock);
 
   if (_phr && FAILED(*_phr))
     return;
@@ -296,7 +296,7 @@ VALibStream::VALibStream(TCHAR *_filename, CSource *_parent, HRESULT *_phr)
 
 VALibStream::~VALibStream()
 {
-	CAutoLock auto_lock(&seek_lock);
+  CAutoLock auto_lock(&seek_lock);
   file.close();
 }
 
@@ -333,7 +333,7 @@ VALibStream::GetMediaType(int i, CMediaType* pmt)
   if (i < 0) return E_INVALIDARG;
 
   WAVEFORMATEX wfe;
-	memset(&wfe, 0, sizeof(WAVEFORMATEX));
+  memset(&wfe, 0, sizeof(WAVEFORMATEX));
 
   switch (spk.format)
   {
@@ -383,13 +383,13 @@ VALibStream::GetMediaType(int i, CMediaType* pmt)
   pmt->SetFormat((BYTE*)&wfe, sizeof(WAVEFORMATEX) + wfe.cbSize);
   pmt->SetTemporalCompression(FALSE);
 
-	return S_OK;
+  return S_OK;
 }
 
 HRESULT 
 VALibStream::CheckMediaType(const CMediaType* pmt)
 {
-	if (*pmt->Type() != MEDIATYPE_Audio)
+  if (*pmt->Type() != MEDIATYPE_Audio)
     return E_INVALIDARG;
 
   switch (spk.format)
@@ -437,8 +437,8 @@ VALibStream::DecideBufferSize(IMemAllocator* pAlloc, ALLOCATOR_PROPERTIES* pProp
 
   HRESULT hr = NOERROR;
 
-	pProperties->cBuffers = 1;
-	pProperties->cbBuffer = multi_parser.max_frame_size();
+  pProperties->cBuffers = 1;
+  pProperties->cbBuffer = multi_parser.max_frame_size();
 
   ALLOCATOR_PROPERTIES Actual;
 
