@@ -7,3 +7,6 @@ REGEDIT4
 
 [HKEY_LOCAL_MACHINE\SOFTWARE\Classes\Media Type\Extensions\.dts]
 "Source Filter"="{F7380D4C-DE45-4f03-9209-15EBA8552463}"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\Media Type\Extensions\.spdif]
+"Source Filter"="{F7380D4C-DE45-4f03-9209-15EBA8552463}"
