@@ -5,7 +5,7 @@
 #include "parsers\ac3\ac3_header.h"
 #include "parsers\dts\dts_header.h"
 #include "parsers\mpa\mpa_header.h"
-#include "parsers\spdif_header.h"
+#include "parsers\spdif\spdif_header.h"
 
 char *
 wide2char(LPCWSTR _wide_str)
