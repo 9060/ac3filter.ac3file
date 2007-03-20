@@ -17,9 +17,9 @@ goto endofperl
 
 use strict;
 
-my $ver  = "0.3a";
-my $ver1 = "0_3a";
-my $date = "31.07.2006";
+my $ver  = "0.4b";
+my $ver1 = "0_4b";
+my $date = "20.03.2007";
 my $bin = "..\\ac3file_$ver1.exe";
 my $src = "..\\ac3file_${ver1}_src.zip";
 my $package = "..\\ac3file_$ver1";
