@@ -480,10 +480,10 @@ VALibStream::FillBuffer(IMediaSample* sample)
   {
     CAutoLock auto_lock(&seek_lock);
 
-    if (file.eof())
+    if (!file.load_frame())
       return S_FALSE;
 
-    if (!file.load_frame())
+    if (file.eof())
       return S_FALSE;
 
     if (file.is_new_stream())
