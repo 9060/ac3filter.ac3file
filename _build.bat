@@ -17,15 +17,26 @@ goto endofperl
 
 use strict;
 
-my $ver  = "0.4b";
-my $ver1 = "0_4b";
-my $date = "20.03.2007";
-my $bin = "..\\ac3file_$ver1.exe";
-my $src = "..\\ac3file_${ver1}_src.zip";
-my $package = "..\\ac3file_$ver1";
+###########################################################
+# Version
 
-my $make_bin = "C:\\Devel\\NSIS\\makensis /DVERSION=$ver /DSETUP_FILE=$bin /DSOURCE_DIR=$package ac3file.nsi";
-my $make_src = "pkzip25 -add -rec -dir -excl=CVS -lev=9 $src";
+my $tm = localtime;
+my $ver = shift || sprintf "internal %02d/%02d/%02d %02d:%02d", $tm->mday, $tm->mon+1, $tm->year-100, $tm->hour, $tm->min;
+my $ver1 = $ver;
+$ver1 =~ s/[\s\.]/_/g;
+$ver1 =~ s/[\\\/\:]//g;
+
+print "Building version $ver\n";
+
+###########################################################
+# Other vars
+
+my $package = "..\\ac3file_$ver1";
+my $bin = "..\\ac3file_$ver1.exe";
+my $src = "ac3file_${ver1}_src.zip";
+
+my $make_bin = "\"c:\\Devel\\NSIS\\makensis\" /NOCONFIG /DVERSION=\"$ver\" /DSETUP_FILE=$bin /DSOURCE_DIR=$package ac3file.nsi";
+my $make_src = "pkzip25 -add -rec -dir -excl=CVS -lev=9 $src ac3file\\*.* valib\\*.*";
 
 sub read_file
 {
@@ -109,8 +120,12 @@ system('msdev ac3file.dsp /MAKE "ac3file - Win32 Release" /REBUILD')
 `del $bin 2> nul`;
 `del $src 2> nul`;
 
-system($make_src);
 system($make_bin);
+
+chdir("..\\valib");
+`_clear.bat`;
+chdir("..");
+system($make_src);
 
 ###############################################################################
 
