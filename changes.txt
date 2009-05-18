@@ -1,21 +1,25 @@
-<b>0.5b</b> - 30.05.07
+0.6b - 19.05.09
+  + x64 support
+
+
+0.5b - 30.05.07
   * Now filter can work with very short files ( < 1sec )
   ! Fixed bug in AC3 decoder (audio skips). Thanks to Chris Meadowcroft!
 
 
-<b>0.4b</b> - 20.03.07
+0.4b - 20.03.07
   * Fixed bug with some 14bit DTS streams
   * Filter size reduced
 
 
-<b>0.3a</b> - 31.07.06
+0.3a - 31.07.06
   * Format detection algorithm updated
     Now it require 5 frames (~1sec) instead of 100 frames (~30sec)
   * Extended AC3 sainty checks disabled
     How it recognizes AC3 files produced with buggy encoder
 
 
-<b>0.2a</b> - 15.07.06
+0.2a - 15.07.06
   * First public release
   * Support AC3/DTS files of following formats:
       AC3: 8 bit (= 16 bit little endian)

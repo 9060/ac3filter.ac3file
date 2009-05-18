@@ -85,7 +85,7 @@ AC3FileDlg::OnDeactivate()
 // Handle messages
 ///////////////////////////////////////////////////////////////////////////////
 
-BOOL 
+INT_PTR 
 AC3FileDlg::OnReceiveMessage(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
   switch (uMsg)

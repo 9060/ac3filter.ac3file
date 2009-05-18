@@ -10,29 +10,15 @@
 char *
 wide2char(LPCWSTR _wide_str)
 {
-  int size = wcstombs(0, _wide_str, 0) + 1;
+  size_t size = wcstombs(0, _wide_str, MAX_PATH) + 1;
   if (!size) return 0;
 
   char *char_str = new char[size];
   if (!char_str) return 0;
 
-  WideCharToMultiByte(CP_ACP, 0, _wide_str, -1, char_str, size, 0, 0);
+  WideCharToMultiByte(CP_ACP, 0, _wide_str, -1, char_str, (int)size, 0, 0);
   char_str[size-1] = 0; // make sure that string is properly ended
   return char_str;
-}
-
-LPWSTR
-char2wide(const char *_char_str)
-{
-  int size = mbstowcs(0, _char_str, 0) + 1;
-  if (!size) return 0;
-
-  wchar_t *wide_str = new wchar_t[size];
-  if (!wide_str) return 0;
-
-  MultiByteToWideChar(CP_ACP, 0, _char_str, -1, wide_str, size);
-  wide_str[size-1] = 0; // make sure that string is properly ended
-  return wide_str;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -82,15 +68,15 @@ VALibSource::NonDelegatingQueryInterface(REFIID _riid, void **_ppv)
 // IAC3File
 
 STDMETHODIMP 
-VALibSource::get_info(char *_info, int _len)
+VALibSource::get_info(char *_info, size_t _len)
 {
   if (!stream) return E_FAIL;
 
   // windows controls require '\n' to be replaced with '\r\n'
-  int len = stream->get_info(_info, _len);
-  int cnt = 0;
+  size_t len = stream->get_info(_info, _len);
+  size_t cnt = 0;
 
-  for (int i = 0; i < len; i++)
+  for (size_t i = 0; i < len; i++)
     if (_info[i+1] == '\n')
       cnt++;
 
@@ -198,13 +184,13 @@ VALibSource::GetCurFile(LPOLESTR *_filename, AM_MEDIA_TYPE *_pmt)
   {
     const char *filename = stream->get_filename();
 
-    int size = mbstowcs(0, filename, 0) + 1;
+    size_t size = mbstowcs(0, filename, 0) + 1;
     if (!size) return E_OUTOFMEMORY;
 
     *_filename = (LPOLESTR)CoTaskMemAlloc(size * sizeof(wchar_t));
     if (!*_filename) return E_OUTOFMEMORY;
 
-    MultiByteToWideChar(CP_ACP, 0, filename, -1, *_filename, size);
+    MultiByteToWideChar(CP_ACP, 0, filename, -1, *_filename, (int)size);
     (*_filename)[size-1] = 0; // make sure that string is properly ended
   }
   else
@@ -256,7 +242,7 @@ VALibSource::GetPages(CAUUID *pPages)
 // VALibStream
 ///////////////////////////////////////////////////////////////////////////////
 
-VALibStream::VALibStream(TCHAR *_filename, CSource *_parent, HRESULT *_phr)
+VALibStream::VALibStream(const char *_filename, CSource *_parent, HRESULT *_phr)
 : CSourceStream(_filename, _phr, _parent, L"Output")
 , CSourceSeeking(_filename, (IPin*)this, _phr, &seek_lock)
 {
@@ -338,7 +324,7 @@ VALibStream::GetMediaType(int i, CMediaType* pmt)
   switch (spk.format)
   {
     case FORMAT_AC3:
-      wfe.wFormatTag = WAVE_FORMAT_AC3;
+      wfe.wFormatTag = WAVE_FORMAT_AVI_AC3;
       switch(i)
       {
         case 0: pmt->SetSubtype(&MEDIASUBTYPE_DOLBY_AC3); break;
@@ -348,7 +334,7 @@ VALibStream::GetMediaType(int i, CMediaType* pmt)
       break;
 
     case FORMAT_DTS:
-      wfe.wFormatTag = WAVE_FORMAT_DTS;
+      wfe.wFormatTag = WAVE_FORMAT_AVI_DTS;
       switch(i)
       {
         case 0: pmt->SetSubtype(&MEDIASUBTYPE_DTS);     break;
@@ -400,7 +386,7 @@ VALibStream::CheckMediaType(const CMediaType* pmt)
         return S_OK;
 
       if (*pmt->FormatType() == FORMAT_WaveFormatEx &&
-          ((WAVEFORMATEX*)pmt->Format())->wFormatTag == WAVE_FORMAT_AC3)
+          ((WAVEFORMATEX*)pmt->Format())->wFormatTag == WAVE_FORMAT_AVI_AC3)
           return S_OK;
 
       return E_INVALIDARG;
@@ -411,7 +397,7 @@ VALibStream::CheckMediaType(const CMediaType* pmt)
         return S_OK;
 
       if (*pmt->FormatType() == FORMAT_WaveFormatEx && 
-          ((WAVEFORMATEX*)pmt->Format())->wFormatTag == WAVE_FORMAT_DTS)
+          ((WAVEFORMATEX*)pmt->Format())->wFormatTag == WAVE_FORMAT_AVI_DTS)
           return S_OK;
 
     case FORMAT_SPDIF:
@@ -438,7 +424,7 @@ VALibStream::DecideBufferSize(IMemAllocator* pAlloc, ALLOCATOR_PROPERTIES* pProp
   HRESULT hr = NOERROR;
 
   pProperties->cBuffers = 1;
-  pProperties->cbBuffer = multi_parser.max_frame_size();
+  pProperties->cbBuffer = (long)multi_parser.max_frame_size();
 
   ALLOCATOR_PROPERTIES Actual;
 
@@ -497,8 +483,8 @@ VALibStream::FillBuffer(IMediaSample* sample)
     if (FAILED(sample->GetPointer(&buf)) || !buf)
       return S_FALSE;
 
-    int frame_size = file.get_frame_size();
-    if FAILED(sample->SetActualDataLength(frame_size))
+    size_t frame_size = file.get_frame_size();
+    if FAILED(sample->SetActualDataLength((long)frame_size))
       return S_FALSE;
 
     memcpy(buf, file.get_frame(), frame_size);

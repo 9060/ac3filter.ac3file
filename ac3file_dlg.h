@@ -20,7 +20,7 @@ private:
 
   AC3FileDlg(TCHAR *pName, LPUNKNOWN lpunk, HRESULT *phr, int DialogId, int TitleId, int flags);
 
-  BOOL OnReceiveMessage(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+  INT_PTR OnReceiveMessage(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
   HRESULT OnConnect(IUnknown *pUnknown);
   HRESULT OnDisconnect();

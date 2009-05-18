@@ -29,7 +29,7 @@ public:
   /////////////////////////////////////////////////////////
   // IAC3File
 
-  STDMETHODIMP get_info(char *info, int len);
+  STDMETHODIMP get_info(char *info, size_t len);
   STDMETHODIMP get_pos(unsigned *frames, unsigned *bytes, unsigned *ms);
   STDMETHODIMP get_size(unsigned *frames, unsigned *bytes, unsigned *ms);
 
@@ -65,7 +65,7 @@ protected:
   Speakers spk;
 
 public:
-  VALibStream(TCHAR *_filename, CSource *_parent, HRESULT *_phr);
+  VALibStream(const char *_filename, CSource *_parent, HRESULT *_phr);
   virtual ~VALibStream();
 
   size_t get_info(char *_buf, size_t _len) const;
