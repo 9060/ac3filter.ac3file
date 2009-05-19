@@ -16,7 +16,7 @@ protected:
   VALibStream *stream;
 
 public:
-  VALibSource(TCHAR *_filter_name, LPUNKNOWN _lpunk, CLSID _clsid);
+  VALibSource(char *_filter_name, LPUNKNOWN _lpunk, CLSID _clsid);
   virtual ~VALibSource();
   static CUnknown *WINAPI CreateInstance(LPUNKNOWN _lpunk, HRESULT* _phr);
 
@@ -65,7 +65,7 @@ protected:
   Speakers spk;
 
 public:
-  VALibStream(const char *_filename, CSource *_parent, HRESULT *_phr);
+  VALibStream(char *_filename, CSource *_parent, HRESULT *_phr);
   virtual ~VALibStream();
 
   size_t get_info(char *_buf, size_t _len) const;

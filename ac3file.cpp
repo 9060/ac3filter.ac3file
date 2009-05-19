@@ -25,7 +25,7 @@ wide2char(LPCWSTR _wide_str)
 // VALibSource
 ///////////////////////////////////////////////////////////////////////////////
 
-VALibSource::VALibSource(TCHAR *_filter_name, LPUNKNOWN _lpunk, CLSID _clsid)
+VALibSource::VALibSource(char *_filter_name, LPUNKNOWN _lpunk, CLSID _clsid)
 :CSource(_filter_name, _lpunk, _clsid)
 {}
 
@@ -242,7 +242,7 @@ VALibSource::GetPages(CAUUID *pPages)
 // VALibStream
 ///////////////////////////////////////////////////////////////////////////////
 
-VALibStream::VALibStream(const char *_filename, CSource *_parent, HRESULT *_phr)
+VALibStream::VALibStream(char *_filename, CSource *_parent, HRESULT *_phr)
 : CSourceStream(_filename, _phr, _parent, L"Output")
 , CSourceSeeking(_filename, (IPin*)this, _phr, &seek_lock)
 {
