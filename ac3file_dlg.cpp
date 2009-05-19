@@ -157,7 +157,7 @@ AC3FileDlg::set_dynamic_controls()
   if (memcmp(new_info, info, strlen(info)) || refresh)
   {
     memcpy(info, new_info, sizeof(info));
-    SendDlgItemMessage(m_Dlg, IDC_EDT_INFO, WM_SETTEXT, 0, (LONG)(LPSTR)info);
+    SendDlgItemMessage(m_Dlg, IDC_EDT_INFO, WM_SETTEXT, 0, (LPARAM)(LPSTR)info);
   }
 
   /////////////////////////////////////
