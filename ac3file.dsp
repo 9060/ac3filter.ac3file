@@ -56,7 +56,7 @@ LINK32=link.exe
 # ADD LINK32 msvcrt.lib strmbase.lib oldnames.lib winmm.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /machine:I386 /nodefaultlib /out:"Release/ac3file.ax"
 # Begin Special Build Tool
 SOURCE="$(InputPath)"
-PostBuild_Cmds=_reg_release.bat
+PostBuild_Cmds=register.cmd Release
 # End Special Build Tool
 
 !ELSEIF  "$(CFG)" == "ac3file - Win32 Debug"
@@ -86,7 +86,7 @@ LINK32=link.exe
 # ADD LINK32 msvcrtd.lib strmbasd.lib oldnames.lib winmm.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /debug /machine:I386 /nodefaultlib /out:"Debug/ac3file.ax" /pdbtype:sept
 # Begin Special Build Tool
 SOURCE="$(InputPath)"
-PostBuild_Cmds=_reg_debug.bat
+PostBuild_Cmds=register.cmd Debug
 # End Special Build Tool
 
 !ENDIF 
