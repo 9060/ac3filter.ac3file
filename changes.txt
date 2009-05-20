@@ -1,5 +1,6 @@
-0.6b - 19.05.09
+0.6b - 20.05.09
   + x64 support
+  + Localized installer
 
 
 0.5b - 30.05.07
