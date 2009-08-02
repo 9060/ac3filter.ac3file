@@ -31,12 +31,17 @@ DEFINE_GUID(MEDIASUBTYPE_AVI_DTS,
 // Interfaces
 ///////////////////////////////////////////////////////////////////////////////
 
+#define AC3FILE_BYTES  0
+#define AC3FILE_TIME   1
+#define AC3FILE_FRAMES 2
+
 DECLARE_INTERFACE_(IAC3File, IUnknown)
 {
   // Stats
   STDMETHOD (get_info)  (char *info, size_t len) = 0;
   STDMETHOD (get_pos)   (unsigned *frames, unsigned *bytes, unsigned *ms) = 0;
   STDMETHOD (get_size)  (unsigned *frames, unsigned *bytes, unsigned *ms) = 0;
+  STDMETHOD (get_stat)  (double *size, double *pos, int units) = 0;
 };
 
 #endif

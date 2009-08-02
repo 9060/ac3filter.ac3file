@@ -21,6 +21,18 @@ wide2char(LPCWSTR _wide_str)
   return char_str;
 }
 
+inline FileParser::units_t get_units(int units)
+{
+  switch (units)
+  {
+    case AC3FILE_BYTES:  return FileParser::bytes;
+    case AC3FILE_TIME:   return FileParser::time;
+    case AC3FILE_FRAMES: return FileParser::frames;
+  }
+  return FileParser::bytes;
+}
+
+
 ///////////////////////////////////////////////////////////////////////////////
 // VALibSource
 ///////////////////////////////////////////////////////////////////////////////
@@ -103,9 +115,9 @@ VALibSource::get_pos(unsigned *_frames, unsigned *_bytes, unsigned *_ms)
 {
   if (!stream) return E_FAIL;
 
-  if (_frames) *_frames = stream->get_pos_frames();
-  if (_bytes)  *_bytes  = stream->get_pos_bytes();
-  if (_ms)     *_ms     = stream->get_pos_ms();
+  if (_frames) *_frames = (unsigned)stream->get_pos(FileParser::frames);
+  if (_bytes)  *_bytes  = (unsigned)stream->get_pos(FileParser::bytes);
+  if (_ms)     *_ms     = (unsigned)stream->get_pos(FileParser::time) * 1000;
 
   return S_OK;
 }
@@ -115,13 +127,23 @@ VALibSource::get_size(unsigned *_frames, unsigned *_bytes, unsigned *_ms)
 {
   if (!stream) return E_FAIL;
 
-  if (_frames) *_frames = stream->get_size_frames();
-  if (_bytes)  *_bytes  = stream->get_size_bytes();
-  if (_ms)     *_ms = stream->get_size_ms();
+  if (_frames) *_frames = (unsigned)stream->get_size(FileParser::frames);
+  if (_bytes)  *_bytes  = (unsigned)stream->get_size(FileParser::bytes);
+  if (_ms)     *_ms     = (unsigned)stream->get_size(FileParser::time) * 1000;
 
   return S_OK;
 }
 
+STDMETHODIMP 
+VALibSource::get_stat(double *_size, double *_pos, int _units)
+{
+  if (!stream) return E_FAIL;
+
+  if (_size) *_size = stream->get_size(get_units(_units));
+  if (_pos)  *_pos  = stream->get_pos(get_units(_units));
+
+  return S_OK;
+}
 
 ///////////////////////////////////////////////////////////
 // IFileSourceFilter
@@ -571,5 +593,3 @@ VALibStream::SetRate(double _rate)
   restart();
   return S_OK;
 }
-
-

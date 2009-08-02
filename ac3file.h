@@ -32,6 +32,7 @@ public:
   STDMETHODIMP get_info(char *info, size_t len);
   STDMETHODIMP get_pos(unsigned *frames, unsigned *bytes, unsigned *ms);
   STDMETHODIMP get_size(unsigned *frames, unsigned *bytes, unsigned *ms);
+  STDMETHODIMP get_stat(double *size, double *pos, int units);
 
   /////////////////////////////////////////////////////////
   // IFileSourceFilter
@@ -70,15 +71,9 @@ public:
 
   size_t get_info(char *_buf, size_t _len) const;
 
-  inline const char *get_filename()          const { return file.get_filename(); }
-
-  inline unsigned get_pos_frames()           const { return (unsigned)file.get_pos(file.frames); }
-  inline unsigned get_pos_bytes()            const { return (unsigned)file.get_pos(file.bytes); }
-  inline unsigned get_pos_ms()               const { return (unsigned)file.get_pos(file.time) * 1000; }
-
-  inline unsigned get_size_frames()          const { return (unsigned)file.get_size(file.frames); }
-  inline unsigned get_size_bytes()           const { return (unsigned)file.get_size(file.bytes); }
-  inline unsigned get_size_ms()              const { return (unsigned)file.get_size(file.time) * 1000; }
+  inline const char *get_filename()                 const { return file.get_filename();  }
+  inline double get_pos(FileParser::units_t units)  const { return file.get_pos(units);  }
+  inline double get_size(FileParser::units_t units) const { return file.get_size(units); }
 
   /////////////////////////////////////////////////////////
   // IUnknown

@@ -1,10 +1,35 @@
 #include <stdio.h>
+#include <math.h>
 #include <windows.h>
 #include "ac3file_dlg.h"
 #include "guids.h"
 #include "resource.h"
 
 #define SAFE_RELEASE(p) { if (p) p->Release(); p = 0; }
+
+int compact_size(double size)
+{
+  int iter = 0;
+  while (size >= 10000 && iter < 5)
+  {
+    size /= 1024;
+    iter++;
+  }
+  return (int)size;
+}
+
+const char *compact_suffix(double size)
+{
+  static const char *suffixes[] = { "", "K", "M", "G", "T", "P" };
+
+  int iter = 0;
+  while (size >= 10000 && iter < 5)
+  {
+    size /= 1024;
+    iter++;
+  }
+  return suffixes[iter];
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 // Initialization / Deinitialization
@@ -138,18 +163,20 @@ AC3FileDlg::init_controls()
 void 
 AC3FileDlg::set_dynamic_controls()
 {
-  static char     info[1024] = "";
-  static unsigned frames  = 0;
-  static unsigned bytes   = 0;
-  static unsigned ms      = 0;
+  static char   info[1024] = "";
+  static double frames = 0;
+  static double bytes  = 0;
+  static double time   = 0;
   
-  char     new_info[1024];
-  unsigned new_frames;
-  unsigned new_bytes;
-  unsigned new_ms;
+  char   new_info[1024];
+  double new_frames;
+  double new_bytes;
+  double new_time;
 
   filter->get_info(new_info, sizeof(new_info));
-  filter->get_pos(&new_frames, &new_bytes, &new_ms);
+  filter->get_stat(0, &new_bytes,  AC3FILE_BYTES);
+  filter->get_stat(0, &new_time,   AC3FILE_TIME);
+  filter->get_stat(0, &new_frames, AC3FILE_FRAMES);
 
   /////////////////////////////////////
   // Stream info
@@ -163,23 +190,35 @@ AC3FileDlg::set_dynamic_controls()
   /////////////////////////////////////
   // Stats
 
-  if (new_frames != frames || refresh)
+  if (fabs(frames - new_frames) > 1 || refresh)
   {
     frames = new_frames;
-    SetDlgItemInt(m_Dlg, IDC_EDT_FRAMES, frames, false);
-  }
-  if (new_bytes != bytes || refresh)
-  {
-    bytes = new_bytes;
-    SetDlgItemInt(m_Dlg, IDC_EDT_FILEPOS, bytes, false);
+
+    char str[256];
+    sprintf(str, "%.0f", frames);
+    SetDlgItemText(m_Dlg, IDC_EDT_FRAMES, str);
   }
 
-  if (new_ms != ms || refresh)
+  if (fabs(new_bytes - bytes) > 1 || refresh)
   {
-    ms = new_ms;
-    char time[16];
-    sprintf(time, "%i:%02i:%02i.%03i", ms / 3600000, (ms % 3600000) / 60000, (ms % 60000) / 1000, ms % 1000);
-    SetDlgItemText(m_Dlg, IDC_EDT_TIME, time);
+    bytes = new_bytes;
+
+    char str[256];
+    sprintf(str, "%.0f (%i %sB)", bytes, compact_size(bytes), compact_suffix(bytes));
+    SetDlgItemText(m_Dlg, IDC_EDT_FILEPOS, str);
+  }
+
+  if (fabs(new_time - time) > 0.001 || refresh)
+  {
+    time = new_time;
+    int hr  = int(time / 3600);
+    int min = int(time - hr * 3600) / 60;
+    int sec = int(time - hr * 3600 - min * 60);
+    int ms  = int((time - int(time)) * 1000);
+
+    char str[256];
+    sprintf(str, "%i:%02i:%02i.%03i", hr, min, sec, ms);
+    SetDlgItemText(m_Dlg, IDC_EDT_TIME, str);
   }
 
   refresh = false;
