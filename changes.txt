@@ -1,3 +1,8 @@
+0.7b - 04.08.2009
+  + Large files support ( >4Gb )
+  * AC3 bug fixed (Issue 1)
+
+
 0.6b - 20.05.09
   + x64 support
   + Localized installer
